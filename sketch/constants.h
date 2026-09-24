@@ -15,4 +15,7 @@ constexpr unsigned long SENSOR_READ_INTERVAL_MS = 20;
 constexpr unsigned long ACCELEROMETER_STARTUP_DELAY_MS = 10;
 constexpr unsigned long ACCELEROMETER_READING_DELAY_MS = 100;
 
+// ---- Ports (python/ side sockets) ----
+constexpr int PWM_CALIBRATION_PORT = 7008;
+
 }  // namespace Constants
