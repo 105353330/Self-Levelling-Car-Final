@@ -4,6 +4,11 @@
 
 namespace Constants {
 
+// ---- Lidar ----
+constexpr int LIDAR_OVERRIDE_THRESHOLD_MM = 2000;
+constexpr unsigned long LIDAR_INIT_DELAY_MS = 2000;
+constexpr unsigned long LIDAR_POLL_TIMEOUT_MS = 100;
+
 // ---- I2C bus / accelerometer ----
 constexpr unsigned long I2C_CLOCK_HZ = 100000;
 constexpr unsigned long SENSOR_READ_INTERVAL_MS = 20;
