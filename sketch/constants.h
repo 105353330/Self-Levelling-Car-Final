@@ -4,6 +4,17 @@
 
 namespace Constants {
 
+// ---- Motor / ESC (motor.cpp) ----
+constexpr int ESC_PIN = 5;
+constexpr int ESC_NEUTRAL_US = 1500;                   // µs
+constexpr int ESC_MAXIMUM_US = 1600;                   // µs
+constexpr unsigned long ESC_ARM_TIME_MS = 3000;
+constexpr unsigned long ESC_COMMAND_TIMEOUT_MS = 50;
+
+// ---- Control ranges (also read by the python/ side) ----
+constexpr int CONTROL_SPEED_MIN = 0;
+constexpr int CONTROL_SPEED_MAX = 100;
+
 // ---- Lidar ----
 constexpr int LIDAR_OVERRIDE_THRESHOLD_MM = 2000;
 constexpr unsigned long LIDAR_INIT_DELAY_MS = 2000;
@@ -16,6 +27,8 @@ constexpr unsigned long ACCELEROMETER_STARTUP_DELAY_MS = 10;
 constexpr unsigned long ACCELEROMETER_READING_DELAY_MS = 100;
 
 // ---- Ports (python/ side sockets) ----
+constexpr int ESC_PORT = 7001;
 constexpr int PWM_CALIBRATION_PORT = 7008;
+constexpr int LIDAR_OVERRIDE_PORT = 7009;
 
 }  // namespace Constants
