@@ -1,9 +1,9 @@
-# Creates a python constants document based off constants.h
+﻿# Creates a python constants document based off constants.h
 
 import re
 from pathlib import Path
 
-_PATH = Path(__file__).resolve().parent / "constants.h"
+_PATH = Path(__file__).resolve().parent.parent / "sketch" / "constants.h"
 _LINE = re.compile(r"constexpr\s+(?:unsigned\s+)?(?:int|long|float|double)\s+(\w+)\s*=\s*(-?\d+(?:\.\d+)?)f?\s*;")
 
 
