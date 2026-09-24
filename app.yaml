@@ -1,0 +1,7 @@
+name: RC Car
+description: "Keyboard throttle control over the Bridge"
+icon: 🚗
+version: "1.0.0"
+
+ports: []
+bricks: []
