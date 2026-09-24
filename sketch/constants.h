@@ -21,6 +21,7 @@ constexpr unsigned long STEERING_COMMAND_TIMEOUT_MS = 50;
 // ---- Platform servos (platform.cpp) ----
 constexpr int PLATFORM_SERVO_COUNT = 3;
 constexpr unsigned long PLATFORM_COMMAND_TIMEOUT_MS = 500;  // servos return to centre if no command arrives
+constexpr unsigned long PLATFORM_IDLE_SETTLE_MS = 700;  // menu/idle: centre pulses this long, then the servo signal is switched off
 
 struct PlatformServoConfig {
   int pin;
@@ -31,7 +32,7 @@ struct PlatformServoConfig {
 
 constexpr PlatformServoConfig PLATFORM_SERVOS[PLATFORM_SERVO_COUNT] = {
   {9, 400, 650, 900},
-  {10, 600, 850, 1100},
+  {10, 500, 750, 1000},
   {11, 500, 750, 1000},
 };
 
@@ -58,7 +59,18 @@ constexpr int LEVEL_DEADBAND_US = 8;          // ignore pulse changes smaller th
 constexpr float LEVEL_MAX_SLEW_US_S = 300.0f; // max pulse change per second
 constexpr float LEVEL_MAX_ACCEL_ERROR_G = 0.1f; // hold pulses when |a| differs from 1 g by more than this
 constexpr unsigned long LEVEL_DEBUG_INTERVAL_MS = 500;
-constexpr int LEVEL_CALIBRATION_MODE = 0;      // 1 = run open-loop servo test instead of levelling, 0 = level
+
+// ---- Runtime modes (mode.cpp), picked from python/main.py's menu via Bridge setMode ----
+constexpr int MODE_IDLE = 0;       // motor neutral, steering + platform centred
+constexpr int MODE_DRIVE = 1;      // keyboard driving, platform levelling on
+constexpr int MODE_PWM_CAL = 2;    // pwmCalibration.cpp owns the pins, everything else detached
+constexpr int MODE_LEVEL = 3;      // platform levelling only
+constexpr int MODE_SERVO_CAL = 4;  // open-loop servo response test (servoCalibration.cpp)
+
+// ---- Servo response calibration (servoCalibration.cpp) ----
+constexpr int CAL_STEP_US = 100;               // pulse offset applied to one servo at a time
+constexpr unsigned long CAL_SETTLE_MS = 1500;  // wait after each move before averaging
+constexpr unsigned long CAL_AVERAGE_MS = 2000; // averaging window
 
 // ---- Control ranges (also read by the python/ side) ----
 constexpr int CONTROL_SPEED_MIN = 0;
@@ -67,7 +79,7 @@ constexpr int CONTROL_TURN_MIN = -180;
 constexpr int CONTROL_TURN_MAX = 180;
 
 // ---- Lidar ----
-constexpr int LIDAR_OVERRIDE_THRESHOLD_MM = 2000;
+constexpr int LIDAR_OVERRIDE_THRESHOLD_MM = 200;
 constexpr unsigned long LIDAR_INIT_DELAY_MS = 2000;
 constexpr unsigned long LIDAR_POLL_TIMEOUT_MS = 100;
 
@@ -82,6 +94,9 @@ constexpr int ESC_PORT = 7001;
 constexpr int STEERING_SERVO_PORT = 7002;
 constexpr int PWM_CALIBRATION_PORT = 7008;
 constexpr int LIDAR_OVERRIDE_PORT = 7009;
+constexpr int CONTROL_PORT = 7012;  // main.py menu <-> service (control.py)
+constexpr int CAMERA_STREAM_PORT = 8080;  // menu option 6: annotated camera view as an MJPEG web page
+constexpr int SERVICE_LOOP_HZ = 50;  // python service loop rate; unthrottled Bridge traffic jitters the software servo PWM. Must beat ESC_COMMAND_TIMEOUT_MS
 
 // ---- Object avoidance (Linux/python side only) ----
 constexpr int CAMERA_AVOIDANCE_LOOP_HZ = 10;

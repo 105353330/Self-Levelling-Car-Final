@@ -1,5 +1,5 @@
 name: RC Car
-description: "Keyboard throttle control over the Bridge"
+description: "Self-levelling RC car: menu for driving, calibration, sensor view and platform levelling"
 icon: 🚗
 version: "1.0.0"
 

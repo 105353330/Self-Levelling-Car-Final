@@ -9,6 +9,7 @@
 
 #include "accelerometerReadings.h"
 #include "constants.h"
+#include "mode.h"
 #include "platform.h"
 
 namespace ServoCalibration {
@@ -55,7 +56,7 @@ void begin() {
 }
 
 void update() {
-  if (Constants::LEVEL_CALIBRATION_MODE == 0 || !started) return;
+  if (Mode::get() != Constants::MODE_SERVO_CAL || !started) return;
 
   unsigned long now = millis();
   if (step >= STEP_COUNT) {  // finished: hold centre

@@ -1,4 +1,4 @@
 --extra-index-url https://download.pytorch.org/whl/cpu
-opencv-python
+opencv-python-headless
 torch
 ultralytics

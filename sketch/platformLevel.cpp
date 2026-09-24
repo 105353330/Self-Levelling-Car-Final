@@ -8,6 +8,7 @@
 
 #include "accelerometerReadings.h"
 #include "constants.h"
+#include "mode.h"
 #include "platform.h"
 
 namespace PlatformLevel {
@@ -32,9 +33,12 @@ namespace {
   float lastRoll = 0;
   float lastPitch = 0;
 
-  // Measured pseudo-inverse of the servo -> (roll, pitch) response: us of servo change per degree of error
-  const float INV_ROLL[PLATFORM_SERVO_COUNT]  = { Constants::LEVEL_INV_ROLL_0,  Constants::LEVEL_INV_ROLL_1,  Constants::LEVEL_INV_ROLL_2 };
-  const float INV_PITCH[PLATFORM_SERVO_COUNT] = { Constants::LEVEL_INV_PITCH_0, Constants::LEVEL_INV_PITCH_1, Constants::LEVEL_INV_PITCH_2 };
+  // Measured pseudo-inverse of the servo -> (roll, pitch) response: us of servo change per degree of error.
+  // Seeded from constants.h, overwritten live by setParam() after a servo calibration from the python menu.
+  float INV_ROLL[PLATFORM_SERVO_COUNT]  = { Constants::LEVEL_INV_ROLL_0,  Constants::LEVEL_INV_ROLL_1,  Constants::LEVEL_INV_ROLL_2 };
+  float INV_PITCH[PLATFORM_SERVO_COUNT] = { Constants::LEVEL_INV_PITCH_0, Constants::LEVEL_INV_PITCH_1, Constants::LEVEL_INV_PITCH_2 };
+  float rollZeroDeg  = Constants::LEVEL_ROLL_ZERO_DEG;
+  float pitchZeroDeg = Constants::LEVEL_PITCH_ZERO_DEG;
 
   float clampf(float v, float lo, float hi) {
     return v < lo ? lo : (v > hi ? hi : v);
@@ -75,8 +79,8 @@ namespace {
     filtAz += Constants::LEVEL_FILTER_ALPHA * (mz - filtAz);
 
     // 2. Tilt error from gravity (degrees), measured minus the level reference
-    float roll  = atan2f(filtAx, filtAz) * 180.0f / PI_F - Constants::LEVEL_ROLL_ZERO_DEG;
-    float pitch = atan2f(filtAy, filtAz) * 180.0f / PI_F - Constants::LEVEL_PITCH_ZERO_DEG;
+    float roll  = atan2f(filtAx, filtAz) * 180.0f / PI_F - rollZeroDeg;
+    float pitch = atan2f(filtAy, filtAz) * 180.0f / PI_F - pitchZeroDeg;
     rollOut = roll;
     pitchOut = pitch;
     const float rollErr = roll, pitchErr = pitch;
@@ -105,6 +109,9 @@ namespace {
 }  // namespace
 
 void begin() {
+  histCount = 0;
+  histNext = 0;
+  filterSeeded = false;
   for (int i = 0; i < PLATFORM_SERVO_COUNT; i++) {
     offsetUs[i] = 0.0f;
     lastUs[i] = PLATFORM_SERVOS[i].centre;
@@ -113,7 +120,8 @@ void begin() {
 }
 
 void update() {
-  if (Constants::LEVEL_CALIBRATION_MODE != 0) return;  // servoCalibration owns the servos
+  int mode = Mode::get();
+  if (mode != Constants::MODE_LEVEL && mode != Constants::MODE_DRIVE) return;  // another mode owns the servos
   unsigned long now = millis();
   if (now - lastUpdate < Constants::SENSOR_READ_INTERVAL_MS) return;  // one step per new sample
   float dt = clampf((now - lastUpdate) / 1000.0f, 0.001f, 0.1f);
@@ -156,5 +164,14 @@ float getPitch() { return lastPitch; }
 int getUs1() { return lastUs[0]; }
 int getUs2() { return lastUs[1]; }
 int getUs3() { return lastUs[2]; }
+
+int setParam(int idx, float value) {
+  if (idx == 0) rollZeroDeg = value;
+  else if (idx == 1) pitchZeroDeg = value;
+  else if (idx >= 2 && idx < 2 + PLATFORM_SERVO_COUNT) INV_ROLL[idx - 2] = value;
+  else if (idx >= 2 + PLATFORM_SERVO_COUNT && idx < 2 + 2 * PLATFORM_SERVO_COUNT) INV_PITCH[idx - 2 - PLATFORM_SERVO_COUNT] = value;
+  else return -1;
+  return idx;
+}
 
 }  // namespace PlatformLevel

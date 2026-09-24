@@ -8,16 +8,26 @@
 
 #include "constants.h"
 #include "lidarReadings.h"
+#include "mode.h"
 
 namespace Motor {
 namespace {
 
 int incomingSpeed = Constants::ESC_NEUTRAL_US;  // value received from the Linux side over the Bridge
 bool ARMED = false;
+bool attached = false;
 unsigned long armStart;
 unsigned long lastCommandTime;
 
 Servo ESC;
+
+void attachEsc() {
+  ESC.attach(Constants::ESC_PIN, 1000, 2000);
+  attached = true;
+  ARMED = false;  // re-arm after every (re)attach
+  armStart = millis();
+  lastCommandTime = armStart;
+}
 
 }  // namespace
 
@@ -27,14 +37,23 @@ int setSpeed(int us) {
   return incomingSpeed;
 }
 
-void begin() {
-  ESC.attach(Constants::ESC_PIN, 1000, 2000);
-  armStart = millis();
-  lastCommandTime = armStart;
-}
+void begin() {}  // ESC is only attached in MODE_DRIVE, see update()
 
 void update() {
   unsigned long now = millis();
+  int mode = Mode::get();
+
+  // Uno Q Servo is software PWM: every attached servo costs time in a 4 us timer interrupt, and 5 at
+  // once (ESC + steering + 3 platform) broke the platform pulses. So the ESC is only attached in Drive.
+  if (mode != Constants::MODE_DRIVE) {
+    if (attached) {
+      ESC.detach();
+      digitalWrite(Constants::ESC_PIN, LOW);  // detach can leave the pin stuck high
+      attached = false;
+    }
+    return;
+  }
+  if (!attached) attachEsc();
 
   if (!ARMED) {
     ESC.writeMicroseconds(Constants::ESC_NEUTRAL_US);

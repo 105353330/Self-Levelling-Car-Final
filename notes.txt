@@ -1,0 +1,55 @@
+To connect from PC, run:
+ssh arduino@192.168.1.29
+
+Copy this folder onto the arduino as ~/ArduinoApps/rc-car.
+If ~/ArduinoApps/rc-car already exists, scp copies INTO it (rc-car/Self-Levelling-Car-Final/) and the
+app keeps running the old files, so move the old one out of the way first (on the arduino):
+arduino-app-cli app stop ~/ArduinoApps/rc-car
+mv ~/ArduinoApps/rc-car ~/ArduinoApps/rc-car-old
+Then from PC, in the folder above this one:
+scp -r "Self-Levelling-Car-Final" arduino@192.168.1.29:~/ArduinoApps/rc-car
+Check: ls ~/ArduinoApps/rc-car should show app.yaml notes.txt python sketch yolov8n.pt
+Copies from OneDrive arrive read-only (dr-x------), which breaks the build ("Failed To Create Build
+Directory ... Permission Denied") and servo calibration's constants.h write. After every copy run:
+chmod -R u+rwX,go+rX ~/ArduinoApps/rc-car
+
+To start or stop application, run:
+arduino-app-cli app stop ~/ArduinoApps/rc-car
+arduino-app-cli app start ~/ArduinoApps/rc-car
+
+python/main.py has two roles:
+- App Lab starts it with no terminal -> background service (Bridge, motor, steering, pwm, lidar, control).
+- Run it yourself with a terminal -> text menu that controls the service:
+  docker exec -it rc-car-main-1 python3 /app/python/main.py
+
+Menu (Ctrl+C in any option returns to the menu, 0 exits the menu, service keeps running):
+1) Driving            - arrows: up/down speed, left/right turn. Platform levels, lidar stops the motor,
+                        camera avoidance runs in the background (log: python/avoidance.log).
+2) PWM calibration    - enter a pin, then raw pulse widths (us). Motor/steering/platform are detached meanwhile.
+3) Data viewing       - live accelerometer (g, |g|, roll/pitch) or lidar (mm + override).
+4) Platform levelling - levelling only, prints [level] g=(..) roll pitch us=(..) every 0.5 s.
+5) Servo calibration  - car flat and still, ~50 s. Shows level reference + per-servo deg/us and the new
+                        LEVEL_*_ZERO_DEG / LEVEL_INV_* values. "y" writes them to sketch/constants.h
+                        on the board AND applies them live (no re-upload needed; the service re-sends
+                        them to the MCU on every app start).
+                        Copy the file back to the PC afterwards (from the folder above this one):
+                        scp arduino@192.168.1.29:~/ArduinoApps/rc-car/sketch/constants.h "Self-Levelling-Car-Final/sketch/constants.h"
+6) Camera view        - view only (car stays idle): runs the same YOLO + distance + avoidance pipeline as
+                        Driving and streams the annotated camera to a web page. Open on the PC:
+                        http://192.168.1.29:8080
+                        If that doesn't load (container not on the board's network), tunnel instead and
+                        open http://localhost:8080 (the menu prints the container IP):
+                        ssh -L 8080:<container-ip>:8080 arduino@192.168.1.29
+                        Expect only ~1-3 fps: YOLO runs on the board's CPU.
+
+In the menu (idle) the motor is neutral, steering centred and the platform centred.
+If the menu disconnects (SSH drop / crash) the service returns the car to idle.
+ctl.py / pwmCtl.py can still be run on their own, but the MCU only moves the motor in Driving mode
+and only drives calibration pins in PWM calibration mode, so use the menu.
+
+To view the output log, while program is running, run:
+docker logs -f rc-car-main-1
+
+To restart the docker, run:
+sudo systemctl start docker
+sudo systemctl enable docker

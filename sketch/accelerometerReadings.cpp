@@ -33,23 +33,23 @@ float    lastGy      = 0;
 float    lastGz      = 0;
 
 bool wr8(uint8_t reg, uint8_t val) {
-  Wire.beginTransmission(ADDR);
-  Wire.write(reg);
-  Wire.write(val);
-  return Wire.endTransmission() == 0;
+  Wire1.beginTransmission(ADDR);
+  Wire1.write(reg);
+  Wire1.write(val);
+  return Wire1.endTransmission() == 0;
 }
 
 void drain() {
-  while (Wire.available()) Wire.read();
+  while (Wire1.available()) Wire1.read();
 }
 
 bool readBlock(uint8_t *raw) {
   drain();  // discard leftovers so frames stay aligned
-  if (Wire.requestFrom(ADDR, (uint8_t)7) != 7) {
+  if (Wire1.requestFrom(ADDR, (uint8_t)7) != 7) {
     drain();
     return false;
   }
-  for (uint8_t i = 0; i < 7; i++) raw[i] = Wire.read();
+  for (uint8_t i = 0; i < 7; i++) raw[i] = Wire1.read();
   return true;
 }
 
@@ -72,9 +72,9 @@ bool configure() {
 }  // namespace
 
 void begin() {
-  Wire.begin();
-  Wire.setClock(Constants::I2C_CLOCK_HZ);
-  Wire.setTimeout(25);  // ms; a wedged sensor must not freeze the whole MCU loop
+  Wire1.begin();
+  Wire1.setClock(Constants::I2C_CLOCK_HZ);
+  Wire1.setTimeout(25);  // ms; a wedged sensor must not freeze the whole MCU loop
 }
 
 void update() {
@@ -104,6 +104,8 @@ void update() {
   lastGy = decode(&raw[3]) / COUNTS_PER_G;
   lastGz = decode(&raw[5]) / COUNTS_PER_G;
 }
+
+bool isConfigured() { return configured; }
 
 float getAccelX() { return lastGx; }
 float getAccelY() { return lastGy; }

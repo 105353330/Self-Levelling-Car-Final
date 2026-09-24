@@ -5,6 +5,9 @@
 #include <Arduino.h>
 #include <Servo.h>
 
+#include "constants.h"
+#include "mode.h"
+
 namespace PwmCalibration {
 namespace {
 
@@ -29,6 +32,17 @@ int setPWM(int us) {
 void begin() {}
 
 void update() {
+  if (Mode::get() != Constants::MODE_PWM_CAL) {  // only owns the pin in PWM calibration mode
+    if (attachedPin >= 0) {
+      output.detach();
+      digitalWrite(attachedPin, LOW);  // detach can leave the pin stuck high
+    }
+    attachedPin = -1;
+    pendingPin = -1;
+    pendingPWM = -1;
+    return;
+  }
+
   if (pendingPin >= 0 && pendingPin != attachedPin) {
     if (attachedPin >= 0) output.detach();
     output.attach(pendingPin);
